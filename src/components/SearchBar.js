@@ -1,66 +1,41 @@
-import React, {useState} from 'react';
-import {View, TextInput, StyleSheet, Animated} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, TextInput, StyleSheet} from 'react-native';
+import {useDispatch} from 'react-redux';
+import {setSearchResults, setLoading} from '../store/slices/placesSlice';
+import {searchPlaces} from '../services/places';
+import useDebounce from '../hooks/useDebounce';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import theme from '../theme';
 
-const SearchBar = ({onSearch}) => {
+const SearchBar = () => {
   const [query, setQuery] = useState('');
-  const [focused, setFocused] = useState(false);
-  const scaleAnim = new Animated.Value(1);
+  const debouncedQuery = useDebounce(query, 500);
+  const dispatch = useDispatch();
 
-  const animate = toValue => {
-    Animated.spring(scaleAnim, {
-      toValue,
-      useNativeDriver: true,
-    }).start();
-  };
+  useEffect(() => {
+    const search = async () => {
+      if (debouncedQuery.length > 2) {
+        dispatch(setLoading(true));
+        const results = await searchPlaces(debouncedQuery);
+        dispatch(setSearchResults(results));
+        dispatch(setLoading(false));
+      } else {
+        dispatch(setSearchResults([]));
+      }
+    };
+    search();
+  }, [debouncedQuery]);
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{scale: scaleAnim}],
-          borderColor: focused ? theme.colors.primary : theme.colors.border,
-        },
-      ]}>
-      <Icon
-        name={theme.icons.search}
-        size={24}
-        color={focused ? theme.colors.primary : theme.colors.textSecondary}
-        style={styles.icon}
-      />
+    <View style={styles.container}>
+      <Icon name="search" size={20} color="#999" style={styles.icon} />
       <TextInput
         style={styles.input}
         placeholder="Search for places..."
-        placeholderTextColor={theme.colors.textSecondary}
         value={query}
-        onChangeText={text => {
-          setQuery(text);
-          onSearch(text);
-        }}
-        onFocus={() => {
-          setFocused(true);
-          animate(1.02);
-        }}
-        onBlur={() => {
-          setFocused(false);
-          animate(1);
-        }}
+        onChangeText={setQuery}
+        clearButtonMode="while-editing"
       />
-      {query.length > 0 && (
-        <Icon
-          name={theme.icons.close}
-          size={20}
-          color={theme.colors.textSecondary}
-          onPress={() => {
-            setQuery('');
-            onSearch('');
-          }}
-          style={styles.clearIcon}
-        />
-      )}
-    </Animated.View>
+    </View>
   );
 };
 
@@ -68,27 +43,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingHorizontal: 12,
     margin: 16,
-    borderWidth: 1,
-    ...theme.shadows.md,
+    elevation: 2,
   },
   input: {
     flex: 1,
     height: 40,
     paddingHorizontal: 8,
-    fontSize: 16,
-    color: theme.colors.text,
-    fontFamily: 'Roboto-Regular',
   },
   icon: {
     marginRight: 8,
-  },
-  clearIcon: {
-    marginLeft: 8,
   },
 });
 

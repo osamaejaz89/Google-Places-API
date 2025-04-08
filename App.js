@@ -1,14 +1,12 @@
 import React from 'react';
 import {Provider} from 'react-redux';
-import {store} from './src/store/store';
 import HomeScreen from './src/screens/HomeScreen';
+import { store } from './src/store/store';
 
-const App = () => {
-  return (
-    <Provider store={store}>
-      <HomeScreen />
-    </Provider>
-  );
-};
+const App = () => (
+  <Provider store={store}>
+    <HomeScreen />
+  </Provider>
+);
 
-export default App;
+export default React.memo(App);
